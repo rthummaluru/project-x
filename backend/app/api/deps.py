@@ -71,6 +71,8 @@ async def get_current_user(
     Raises:
         HTTPException: If token is invalid or user not found
     """
+
+    print("skipping jwt authentication for testing")
     
     # Define the exception for invalid credentials
     credentials_exception = HTTPException(
@@ -79,6 +81,17 @@ async def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
     
+
+    # Temporarily disable JWT authentication
+    # Mock user for development (REMOVE THIS IN PRODUCTION!)
+    current_user = CurrentUser(
+        id=1,
+        email="demo@example.com",
+        company_id=1,  # In real app, this comes from database
+        is_active=True
+    )
+    
+    return current_user
     try:
         # Decode JWT token
         payload = jwt.decode(

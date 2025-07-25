@@ -47,6 +47,7 @@ class LeadBase(BaseModel):
     company_name: Optional[str] = Field(None, max_length=200)
     job_title: Optional[str] = Field(None, max_length=150)
     phone: Optional[str] = Field(None, pattern=r'^\+?[\d\s\-\(\)]+$')  # Basic phone validation
+    linkedin_url: Optional[str] = Field(None, max_length=500)
     
     source: Optional[LeadSource] = None
     source_url: Optional[str] = None
@@ -97,6 +98,7 @@ class LeadUpdate(BaseModel):
     company_name: Optional[str] = Field(None, max_length=200)
     job_title: Optional[str] = Field(None, max_length=150)
     phone: Optional[str] = Field(None, pattern=r'^\+?[\d\s\-\(\)]+$')
+    linkedin_url: Optional[str] = Field(None, max_length=500)
     
     status: Optional[LeadStatus] = None
     score: Optional[int] = Field(None, ge=0, le=100)

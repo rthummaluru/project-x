@@ -47,6 +47,7 @@ class Lead(Base):
     company_name = Column(String(200), nullable=True, index=True)  # Indexed for searching
     job_title = Column(String(150), nullable=True)
     phone = Column(String(20), nullable=True)
+    linkedin_url = Column(String(500), nullable=True)
     
     # Lead source tracking (important for ROI analysis)
     source = Column(String(100), nullable=True)  # "apollo", "linkedin", "website", etc.

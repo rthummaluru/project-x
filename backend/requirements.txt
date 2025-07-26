@@ -35,6 +35,10 @@ pytest-mock==3.12.0
 # Logging & Monitoring
 structlog==23.2.0 
 
+#AI 
+openai
+
+
 
 #other
 greenlet

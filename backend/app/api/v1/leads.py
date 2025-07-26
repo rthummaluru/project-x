@@ -20,6 +20,7 @@ import logging
 
 from app.core.database import get_db
 from app.services.lead_service import LeadService
+from app.services.email_services import EmailService
 from app.schemas.lead import (
     LeadCreate, 
     LeadUpdate, 
@@ -330,3 +331,35 @@ async def create_leads_bulk(
         created=created_leads,
         errors=errors
     )
+
+@router.post("/{lead_id}/generate-email", response_model=dict)
+async def generate_email(
+    lead_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """
+    Generate an email for a lead.
+    """
+    try:
+        lead_service = LeadService(db)
+        lead = await lead_service.get_lead(lead_id=lead_id, company_id=current_user.company_id)
+
+        if not lead:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Lead with ID {lead_id} not found"
+            )
+        
+        email_service = EmailService()
+        email_data = await email_service.generate_email(lead)
+
+        return email_data
+    
+    except Exception as e:
+        logger.error(f"Error generating email for lead {lead_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while generating the email"
+        )
+            

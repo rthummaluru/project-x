@@ -87,6 +87,12 @@ class Settings(BaseSettings):
         description="Allowed origins for CORS (add your frontend URL)"
     )
     
+    #OPENAI Configuration
+    openai_api_key: str = Field(
+        default="",
+        description="OpenAI API Key for Email Generation"
+    )
+
     class Config:
         # Load from .env file
         env_file = ".env"

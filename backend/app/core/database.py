@@ -92,7 +92,7 @@ async def init_db() -> None:
     try:
         async with engine.begin() as conn:
             # Import all models here so they're registered with Base
-            from app.models import company, user, lead      # campaign, agent, integration
+            from app.models import company, user, lead, campaign, campaign_email
             
             # Create all tables
             await conn.run_sync(Base.metadata.create_all)

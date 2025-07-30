@@ -24,3 +24,4 @@ class User(Base):
     
     # Relationships
     created_leads = relationship("Lead", back_populates="creator")
+    campaigns = relationship("Campaign", back_populates="user")

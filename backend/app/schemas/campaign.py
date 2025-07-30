@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field, validator
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 from app.models.campaign import CampaignStatus
-from app.models.lead import LeadFilter
+from app.schemas.lead import LeadFilter
 
 # Nested Models for JSON Field Validation
 class CampaignContext(BaseModel):
@@ -134,8 +134,9 @@ class CampaignResponse(CampaignBase):
     failed_count: Optional[int] = Field(None, description="Number of emails that failed to send")
     
     class Config:
-        # Enable ORM mode so Pydantic can work with SQLAlchemy models
+        
         from_attributes = True
+        populate_by_name = True
 
 # List Response Schema (GET /campaigns)
 class CampaignListResponse(BaseModel):

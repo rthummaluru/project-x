@@ -30,13 +30,20 @@ from app.schemas.lead import (
     LeadBulkCreate,
     LeadBulkResponse
 )
-# We'll create this dependency next
+# We'll create this dependency nextyou
 from app.api.deps import get_current_user
 
 logger = logging.getLogger(__name__)
 
 # Create router with prefix and tags for organization
 router = APIRouter(prefix="/leads", tags=["leads"])
+
+@router.get("/debug", tags=["leads"])
+async def debug_leads_endpoint():
+    """
+    Debug endpoint to test if leads router is working.
+    """
+    return {"message": "Leads endpoint is working!", "status": "ok"}
 
 @router.post("/", response_model=LeadResponse, status_code=status.HTTP_201_CREATED)
 async def create_lead(
@@ -95,6 +102,9 @@ async def create_lead(
     except Exception as e:
         # Unexpected errors
         logger.error(f"Unexpected error creating lead: {e}")
+        logger.error(f"Error type: {type(e)}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred"

@@ -23,3 +23,4 @@ class Company(Base):
     
     # Relationships
     leads = relationship("Lead", back_populates="company")
+    campaigns = relationship("Campaign", back_populates="company")

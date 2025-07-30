@@ -111,6 +111,7 @@ class Lead(Base):
     # Relationships
     company = relationship("Company", back_populates="leads")
     creator = relationship("User", back_populates="created_leads")
+    campaign_emails = relationship("CampaignEmail", back_populates="lead")
     
     # Composite indexes for common query patterns
     __table_args__ = (

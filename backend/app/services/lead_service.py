@@ -57,38 +57,48 @@ class LeadService:
             ValueError: If lead already exists or validation fails
         """
         
-        # Check for duplicate leads (same email within company)
-        existing_lead = await self._find_duplicate_lead(
-            email=lead_data.email,
-            company_id=company_id
-        )
-        
-        if existing_lead:
-            if existing_lead.is_deleted:
-                # Reactivate soft-deleted lead instead of creating new one
-                return await self._reactivate_lead(existing_lead, lead_data)
-            else:
-                raise ValueError(f"Lead with email {lead_data.email} already exists")
-        
-        # Create new lead
-        db_lead = Lead(
-            company_id=company_id,
-            created_by=created_by,
-            **lead_data.model_dump()
-        )
-        
-        # Apply initial lead scoring
-        db_lead = await self._calculate_lead_score(db_lead)
-        
-        # Set initial status based on score
-        db_lead.status = "qualified" if db_lead.score >= 50 else "new"
-        
-        self.db.add(db_lead)
-        await self.db.flush()  # Get the ID without committing
-        await self.db.refresh(db_lead)
-        
-        logger.info(f"Created lead {db_lead.id} for company {company_id}")
-        return db_lead
+        try:
+            logger.info(f"Creating lead for company {company_id}, email: {lead_data.email}")
+            
+            # Check for duplicate leads (same email within company)
+            existing_lead = await self._find_duplicate_lead(
+                email=lead_data.email,
+                company_id=company_id
+            )
+            
+            if existing_lead:
+                if existing_lead.is_deleted:
+                    # Reactivate soft-deleted lead instead of creating new one
+                    return await self._reactivate_lead(existing_lead, lead_data)
+                else:
+                    raise ValueError(f"Lead with email {lead_data.email} already exists")
+            
+            # Create new lead
+            db_lead = Lead(
+                company_id=company_id,
+                created_by=created_by,
+                **lead_data.model_dump()
+            )
+            
+            # Apply initial lead scoring
+            db_lead = await self._calculate_lead_score(db_lead)
+            
+            # Set initial status based on score
+            db_lead.status = "qualified" if db_lead.score >= 50 else "new"
+            
+            self.db.add(db_lead)
+            await self.db.flush()  # Get the ID without committing
+            await self.db.refresh(db_lead)
+            
+            logger.info(f"Created lead {db_lead.id} for company {company_id}")
+            return db_lead
+            
+        except Exception as e:
+            logger.error(f"Error creating lead: {str(e)}")
+            logger.error(f"Error type: {type(e)}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            raise
     
     async def get_lead(self, lead_id: int, company_id: int) -> Optional[Lead]:
         """

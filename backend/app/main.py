@@ -277,12 +277,27 @@ if settings.debug:
         return {
             "debug": settings.debug,
             "database_configured": bool(settings.database_url),
+            "database_url": settings.database_url.split('@')[1] if '@' in settings.database_url else settings.database_url,
             "cors_origins": settings.allowed_origins,
             "rate_limits": {
                 "api_per_minute": settings.rate_limit_per_minute,
                 "email_per_hour": settings.email_rate_limit_per_hour
             }
         }
+    
+    @app.get("/debug/test-db", tags=["Debug"])
+    async def test_database():
+        """Test database connection."""
+        try:
+            from app.core.database import get_db
+            async for db in get_db():
+                # Try a simple query
+                from sqlalchemy import text
+                result = await db.execute(text("SELECT 1"))
+                await result.fetchone()
+                return {"status": "Database connection successful"}
+        except Exception as e:
+            return {"status": "Database connection failed", "error": str(e)}
 
 # Application startup message
 if __name__ == "__main__":

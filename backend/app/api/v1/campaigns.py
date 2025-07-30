@@ -23,6 +23,13 @@ from app.schemas.campaign import (
 
 router = APIRouter(prefix="/campaigns", tags=["Campaigns"])
 
+@router.get("/test", tags=["Campaigns"])
+async def test_campaign_endpoint():
+    """
+    Simple test endpoint to verify campaigns router is working.
+    """
+    return {"message": "Campaigns endpoint is working!", "status": "ok"}
+
 @router.post("/", response_model=CampaignResponse)
 async def create_campaign(
     campaign_data: CampaignCreate,

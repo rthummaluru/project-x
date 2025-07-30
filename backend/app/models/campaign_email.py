@@ -137,7 +137,7 @@ class CampaignEmail(Base):
     
     # Relationships
     campaign = relationship("Campaign", back_populates="emails")
-    lead = relationship("Lead")  # Note: Lead model might not have back_populates yet
+    lead = relationship("Lead", back_populates="campaign_emails")
     
     def __repr__(self):
         return f"<CampaignEmail(id={self.id}, campaign_id={self.campaign_id}, lead_id={self.lead_id}, status='{self.status}')>"

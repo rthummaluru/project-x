@@ -117,6 +117,7 @@ class CampaignService:
         if campaign:
             context_dict = campaign.context_json
             context = CampaignContext(**context_dict)      
+        
         for lead in leads:
             try:
                 # Generate email

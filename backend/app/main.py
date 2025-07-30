@@ -28,7 +28,7 @@ from app.core.database import init_db, close_db
 
 # Import API routers
 from app.api.v1.leads import router as leads_router
-# from app.api.v1.campaigns import router as campaigns_router  # We'll add this later
+from app.api.v1.campaigns import router as campaigns_router
 # from app.api.v1.agents import router as agents_router        # We'll add this later
 # from app.api.v1.auth import router as auth_router            # We'll add this later
 
@@ -248,7 +248,7 @@ async def health_check():
 
 # API v1 routes
 app.include_router(leads_router, prefix="/api/v1")
-# app.include_router(campaigns_router, prefix="/api/v1")  # Coming next!
+app.include_router(campaigns_router, prefix="/api/v1")
 # app.include_router(agents_router, prefix="/api/v1")     # Coming next!
 # app.include_router(auth_router, prefix="/api/v1")       # Coming next!
 

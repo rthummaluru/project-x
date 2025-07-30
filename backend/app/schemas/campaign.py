@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field, validator
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 from app.models.campaign import CampaignStatus
+from app.models.lead import LeadFilter
 
 # Nested Models for JSON Field Validation
 class CampaignContext(BaseModel):
@@ -90,6 +91,7 @@ class CampaignCreate(CampaignBase):
     )
     scheduled_start: Optional[datetime] = Field(None, description="When campaign should begin (defaults to now)")
     max_sequence_length: Optional[int] = Field(4, ge=1, le=4, description="Maximum emails in sequence (1-4)")
+    lead_filter: Optional[LeadFilter] = Field(None, description="Lead targeting criteria")
 
 # Update Schema (PATCH /campaigns/{id})
 class CampaignUpdate(BaseModel):

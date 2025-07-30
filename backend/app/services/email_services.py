@@ -17,6 +17,8 @@ from app.core.config import settings
 from datetime import datetime
 import asyncio
 
+from app.schemas.campaign import CampaignContext, CampaignDelays
+
 logger = logging.getLogger(__name__)
 
 class EmailService:
@@ -29,7 +31,7 @@ class EmailService:
         
         self.client = openai.OpenAI(api_key=settings.openai_api_key)
 
-    async def generate_email(self, lead: Lead) -> Dict[str, Any]:
+    async def generate_email(self, lead: Lead, campaign_context: Optional[CampaignContext] = None) -> Dict[str, Any]:
         """
         Generate a personalized email for a lead.
 
@@ -42,7 +44,7 @@ class EmailService:
 
         try:
             #Build the prompt with the lead data
-            prompt = self._generate_email_prompt(lead)
+            prompt = self._generate_email_prompt(lead, campaign_context)
 
             #Call the OpenAI API
             response = await asyncio.to_thread(
@@ -79,10 +81,24 @@ class EmailService:
             raise e
     
 
-    def _generate_email_prompt(self, lead: Lead) -> str:
+    def _generate_email_prompt(self, lead: Lead, context: Optional[CampaignContext] = None) -> str:
         """
         Generate a prompt for the email generation model.
         """
+
+        if context:
+            context_section = f"""
+            Campaign Context:
+            - Company: {context.company_name}
+            - Product: {context.product_description}
+            - Problem Solved: {context.problem_solved}
+            - Call to Action: {context.call_to_action}
+            - Tone: {context.tone}
+            """
+        else:
+            context_section = ""
+        
+        
         prompt = f"""
             Generate a personalized email for this lead:"
             Name: {lead.full_name}
@@ -97,6 +113,9 @@ class EmailService:
             - Mention their specific role and company
             - Include a clear call-to-action
             - Format: Subject line first, then email body
+
+            If provided, use the following campaign context to guide the email writing:
+            {context_section}
 
             Write the email now
         """

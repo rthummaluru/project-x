@@ -153,6 +153,12 @@ class LeadListResponse(BaseModel):
     page: int
     page_size: int
     total_pages: int
+    
+    # Aggregate statistics
+    stats: Dict[str, int] = Field(
+        default_factory=dict,
+        description="Lead counts by status: {'total': 100, 'qualified': 25, 'new': 50, 'contacted': 25}"
+    )
 
 # Schema for lead search/filtering
 class LeadFilter(BaseModel):

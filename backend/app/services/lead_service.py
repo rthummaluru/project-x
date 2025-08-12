@@ -214,6 +214,60 @@ class LeadService:
         
         return list(leads), total
     
+    async def get_lead_stats(self, company_id: int) -> Dict[str, int]:
+        """
+        Get aggregate statistics for leads by status.
+        
+        Returns:
+            Dictionary with counts by status: {'total': 100, 'qualified': 25, 'new': 50, 'contacted': 25}
+        """
+        try:
+            # Base query for non-deleted leads
+            base_query = select(Lead).where(
+                and_(
+                    Lead.company_id == company_id,
+                    Lead.is_deleted == False
+                )
+            )
+            
+            # Get total count
+            total_query = select(func.count()).select_from(base_query.subquery())
+            total_result = await self.db.execute(total_query)
+            total = total_result.scalar()
+            
+            # Get counts by status
+            stats_query = select(
+                Lead.status,
+                func.count(Lead.id).label('count')
+            ).where(
+                and_(
+                    Lead.company_id == company_id,
+                    Lead.is_deleted == False
+                )
+            ).group_by(Lead.status)
+            
+            stats_result = await self.db.execute(stats_query)
+            status_counts = dict(stats_result.all())
+            
+            # Build stats dictionary
+            stats = {
+                'total': total,
+                'qualified': status_counts.get('qualified', 0),
+                'new': status_counts.get('new', 0),
+                'contacted': status_counts.get('contacted', 0)
+            }
+            
+            return stats
+            
+        except Exception as e:
+            logger.error(f"Error getting lead stats: {e}")
+            return {
+                'total': 0,
+                'qualified': 0,
+                'new': 0,
+                'contacted': 0
+            }
+    
     async def _find_duplicate_lead(self, email: str, company_id: int) -> Optional[Lead]:
         """Find existing lead with same email in company."""
         

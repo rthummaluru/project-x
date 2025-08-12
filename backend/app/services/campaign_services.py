@@ -9,14 +9,14 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import select, func, and_, or_
 import logging
 
 from app.models.campaign import Campaign, CampaignStatus
 from app.models.campaign_email import CampaignEmail, CampaignEmailStatus
 from app.models.lead import Lead
 from app.services.email_services import EmailService
-from app.schemas.campaign import CampaignCreate, CampaignUpdate, CampaignContext, CampaignDelays
+from app.schemas.campaign import CampaignCreate, CampaignUpdate, CampaignContext, CampaignDelays, CampaignFilter
 from app.schemas.lead import LeadFilter
 
 
@@ -197,5 +197,227 @@ class CampaignService:
             logger.error(f"Error type: {type(e)}")
             import traceback
             logger.error(f"Traceback: {traceback.format_exc()}")
+            raise
+
+    async def list_campaigns(
+        self, 
+        company_id: int, 
+        page: int = 1, 
+        page_size: int = 10,
+        filters: Optional[CampaignFilter] = None
+    ) -> tuple[List[Campaign], int]:
+        """
+        List campaigns with pagination and filtering.
+        """
+        try:
+            # Base query
+            query = select(Campaign).where(Campaign.company_id == company_id)
+            count_query = select(func.count()).select_from(Campaign).where(Campaign.company_id == company_id)
+            
+            # Apply filters
+            if filters:
+                if filters.search:
+                    search_term = f"%{filters.search}%"
+                    query = query.where(Campaign.name.ilike(search_term))
+                    count_query = count_query.where(Campaign.name.ilike(search_term))
+                
+                if filters.status:
+                    query = query.where(Campaign.status == filters.status)
+                    count_query = count_query.where(Campaign.status == filters.status)
+                
+                if filters.is_active is not None:
+                    query = query.where(Campaign.is_active == filters.is_active)
+                    count_query = count_query.where(Campaign.is_active == filters.is_active)
+                
+                if filters.created_after:
+                    query = query.where(Campaign.created_at >= filters.created_after)
+                    count_query = count_query.where(Campaign.created_at >= filters.created_after)
+                
+                if filters.created_before:
+                    query = query.where(Campaign.created_at <= filters.created_before)
+                    count_query = count_query.where(Campaign.created_at <= filters.created_before)
+            
+            # Add ordering and pagination
+            query = query.order_by(Campaign.created_at.desc())
+            query = query.offset((page - 1) * page_size).limit(page_size)
+            
+            # Execute queries
+            campaigns_result = await self.db.execute(query)
+            campaigns = campaigns_result.scalars().all()
+            
+            count_result = await self.db.execute(count_query)
+            total = count_result.scalar()
+            
+            # Add computed fields for each campaign
+            for campaign in campaigns:
+                campaign.context = CampaignContext(**campaign.context_json)
+                campaign.delays = CampaignDelays(delays=campaign.delays_json)
+                
+                # Get email counts
+                email_count_query = select(func.count()).select_from(CampaignEmail).where(
+                    CampaignEmail.campaign_id == campaign.id
+                )
+                email_count_result = await self.db.execute(email_count_query)
+                campaign.email_count = email_count_result.scalar() or 0
+                
+                sent_count_query = select(func.count()).select_from(CampaignEmail).where(
+                    and_(
+                        CampaignEmail.campaign_id == campaign.id,
+                        CampaignEmail.status == CampaignEmailStatus.SENT
+                    )
+                )
+                sent_count_result = await self.db.execute(sent_count_query)
+                campaign.sent_count = sent_count_result.scalar() or 0
+                
+                failed_count_query = select(func.count()).select_from(CampaignEmail).where(
+                    and_(
+                        CampaignEmail.campaign_id == campaign.id,
+                        CampaignEmail.status == CampaignEmailStatus.FAILED
+                    )
+                )
+                failed_count_result = await self.db.execute(failed_count_query)
+                campaign.failed_count = failed_count_result.scalar() or 0
+            
+            return campaigns, total
+            
+        except Exception as e:
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error listing campaigns: {str(e)}")
+            raise
+
+    async def get_campaign(self, campaign_id: int, company_id: int) -> Optional[Campaign]:
+        """
+        Get a specific campaign by ID.
+        """
+        try:
+            query = select(Campaign).where(
+                and_(
+                    Campaign.id == campaign_id,
+                    Campaign.company_id == company_id
+                )
+            )
+            
+            result = await self.db.execute(query)
+            campaign = result.scalar_one_or_none()
+            
+            if campaign:
+                # Add computed fields
+                campaign.context = CampaignContext(**campaign.context_json)
+                campaign.delays = CampaignDelays(delays=campaign.delays_json)
+                
+                # Get email counts
+                email_count_query = select(func.count()).select_from(CampaignEmail).where(
+                    CampaignEmail.campaign_id == campaign.id
+                )
+                email_count_result = await self.db.execute(email_count_query)
+                campaign.email_count = email_count_result.scalar() or 0
+                
+                sent_count_query = select(func.count()).select_from(CampaignEmail).where(
+                    and_(
+                        CampaignEmail.campaign_id == campaign.id,
+                        CampaignEmail.status == CampaignEmailStatus.SENT
+                    )
+                )
+                sent_count_result = await self.db.execute(sent_count_query)
+                campaign.sent_count = sent_count_result.scalar() or 0
+                
+                failed_count_query = select(func.count()).select_from(CampaignEmail).where(
+                    and_(
+                        CampaignEmail.campaign_id == campaign.id,
+                        CampaignEmail.status == CampaignEmailStatus.FAILED
+                    )
+                )
+                failed_count_result = await self.db.execute(failed_count_query)
+                campaign.failed_count = failed_count_result.scalar() or 0
+            
+            return campaign
+            
+        except Exception as e:
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error getting campaign: {str(e)}")
+            raise
+
+    async def update_campaign(
+        self, 
+        campaign_id: int, 
+        company_id: int, 
+        update_data: CampaignUpdate
+    ) -> Optional[Campaign]:
+        """
+        Update a campaign.
+        """
+        try:
+            # First get the campaign
+            campaign = await self.get_campaign(campaign_id, company_id)
+            if not campaign:
+                return None
+            
+            # Check if campaign can be updated (only drafts typically)
+            if campaign.status != CampaignStatus.DRAFT:
+                raise ValueError("Only draft campaigns can be updated")
+            
+            # Apply updates
+            if update_data.name is not None:
+                campaign.name = update_data.name
+            
+            if update_data.context is not None:
+                campaign.context_json = update_data.context.dict()
+            
+            if update_data.delays is not None:
+                campaign.delays_json = update_data.delays.delays
+            
+            if update_data.scheduled_start is not None:
+                campaign.scheduled_start = update_data.scheduled_start
+            
+            if update_data.status is not None:
+                campaign.status = update_data.status
+            
+            if update_data.is_active is not None:
+                campaign.is_active = update_data.is_active
+            
+            campaign.updated_at = datetime.utcnow()
+            
+            await self.db.commit()
+            await self.db.refresh(campaign)
+            
+            # Add computed fields for response
+            campaign.context = CampaignContext(**campaign.context_json)
+            campaign.delays = CampaignDelays(delays=campaign.delays_json)
+            
+            return campaign
+            
+        except Exception as e:
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error updating campaign: {str(e)}")
+            raise
+
+    async def delete_campaign(self, campaign_id: int, company_id: int) -> bool:
+        """
+        Delete a campaign (soft delete).
+        """
+        try:
+            query = select(Campaign).where(
+                and_(
+                    Campaign.id == campaign_id,
+                    Campaign.company_id == company_id
+                )
+            )
+            
+            result = await self.db.execute(query)
+            campaign = result.scalar_one_or_none()
+            
+            if not campaign:
+                return False
+            
+            # Soft delete
+            campaign.is_active = False
+            campaign.updated_at = datetime.utcnow()
+            
+            await self.db.commit()
+            return True
+            
+        except Exception as e:
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error deleting campaign: {str(e)}")
             raise
 

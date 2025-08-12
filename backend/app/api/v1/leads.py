@@ -178,6 +178,9 @@ async def list_leads(
             page_size=page_size
         )
         
+        # Get aggregate statistics
+        stats = await lead_service.get_lead_stats(company_id=current_user.company_id)
+        
         # Calculate pagination info
         total_pages = (total + page_size - 1) // page_size  # Ceiling division
         
@@ -186,7 +189,8 @@ async def list_leads(
             total=total,
             page=page,
             page_size=page_size,
-            total_pages=total_pages
+            total_pages=total_pages,
+            stats=stats
         )
         
     except Exception as e:

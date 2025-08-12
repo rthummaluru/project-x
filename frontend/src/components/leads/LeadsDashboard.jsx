@@ -17,6 +17,14 @@ const LeadsDashboard = () => {
   const [totalLeads, setTotalLeads] = useState(0);
   const [pageSize] = useState(10); // Fixed page size for now
   
+  // Stats state
+  const [stats, setStats] = useState({
+    total: 0,
+    qualified: 0,
+    new: 0,
+    contacted: 0
+  });
+  
   // Filter state - matches your backend LeadFilter schema
   const [filters, setFilters] = useState({
     search: '',
@@ -50,6 +58,12 @@ const LeadsDashboard = () => {
       setLeads(response.leads);
       setTotalPages(response.total_pages);
       setTotalLeads(response.total);
+      setStats(response.stats || {
+        total: response.total,
+        qualified: 0,
+        new: 0,
+        contacted: 0
+      });
       
     } catch (err) {
       setError('Failed to load leads. Please try again.');
@@ -114,7 +128,7 @@ const LeadsDashboard = () => {
               <Users className="text-blue-500" size={24} />
               <div className="ml-3">
                 <p className="text-sm font-medium text-gray-600">Total Leads</p>
-                <p className="text-2xl font-bold text-gray-900">{totalLeads}</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
               </div>
             </div>
           </div>
@@ -126,9 +140,7 @@ const LeadsDashboard = () => {
               </div>
               <div className="ml-3">
                 <p className="text-sm font-medium text-gray-600">Qualified</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {leads.filter(lead => lead.status === 'qualified').length}
-                </p>
+                <p className="text-2xl font-bold text-gray-900">{stats.qualified}</p>
               </div>
             </div>
           </div>
@@ -140,9 +152,7 @@ const LeadsDashboard = () => {
               </div>
               <div className="ml-3">
                 <p className="text-sm font-medium text-gray-600">New</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {leads.filter(lead => lead.status === 'new').length}
-                </p>
+                <p className="text-2xl font-bold text-gray-900">{stats.new}</p>
               </div>
             </div>
           </div>
@@ -154,9 +164,7 @@ const LeadsDashboard = () => {
               </div>
               <div className="ml-3">
                 <p className="text-sm font-medium text-gray-600">Contacted</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {leads.filter(lead => lead.status === 'contacted').length}
-                </p>
+                <p className="text-2xl font-bold text-gray-900">{stats.contacted}</p>
               </div>
             </div>
           </div>

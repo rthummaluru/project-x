@@ -1,8 +1,9 @@
 // frontend/src/components/leads/LeadsDashboard.jsx
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Users, RefreshCw } from 'lucide-react';
+import { Search, Filter, Users, RefreshCw, Plus } from 'lucide-react';
 import LeadsTable from './LeadsTable';
 import LeadsFilters from './LeadsFilters';
+import LeadForm from './LeadForm';
 import { fetchLeads } from '../../services/api';
 
 const LeadsDashboard = () => {
@@ -37,6 +38,7 @@ const LeadsDashboard = () => {
   
   // UI state
   const [showFilters, setShowFilters] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
 
   // Load leads when component mounts or filters/page changes
   useEffect(() => {
@@ -86,6 +88,22 @@ const LeadsDashboard = () => {
     loadLeads();
   };
 
+  const handleCreateLead = () => {
+    setShowCreateForm(true);
+  };
+
+  const handleCreateSuccess = (newLead) => {
+    setShowCreateForm(false);
+    // Refresh the leads list to show the new lead
+    loadLeads();
+    // You could also add the new lead directly to the state
+    // setLeads(prev => [newLead, ...prev]);
+  };
+
+  const handleCreateCancel = () => {
+    setShowCreateForm(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
@@ -101,6 +119,14 @@ const LeadsDashboard = () => {
             </div>
             
             <div className="flex items-center space-x-4">
+              <button
+                onClick={handleCreateLead}
+                className="flex items-center px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
+              >
+                <Plus size={16} className="mr-2" />
+                Create Lead
+              </button>
+              
               <button
                 onClick={handleRefresh}
                 disabled={loading}
@@ -198,6 +224,13 @@ const LeadsDashboard = () => {
             onPageChange={handlePageChange}
           />
         </div>
+
+        {/* Create Lead Form Modal */}
+        <LeadForm
+          isOpen={showCreateForm}
+          onClose={handleCreateCancel}
+          onSuccess={handleCreateSuccess}
+        />
       </div>
     </div>
   );

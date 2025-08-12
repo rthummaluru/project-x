@@ -90,6 +90,13 @@ export const deleteLead = async (leadId) => {
   });
 };
 
+export const createLead = async (leadData) => {
+  return apiRequest('/leads/', {
+    method: 'POST',
+    body: JSON.stringify(leadData),
+  });
+};
+
 export const generateEmailForLead = async (leadId) => {
   return apiRequest(`/leads/${leadId}/generate-email`, {
     method: 'POST',
@@ -211,6 +218,47 @@ export const validateCampaignData = (campaignData) => {
     if (!campaignData.context.call_to_action || campaignData.context.call_to_action.trim() === '') {
       errors.push('Call to action is required');
     }
+  }
+  
+  return errors;
+};
+
+// Validation helpers for lead data
+export const validateLeadData = (leadData) => {
+  const errors = [];
+  
+  if (!leadData.email || leadData.email.trim() === '') {
+    errors.push('Email is required');
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(leadData.email)) {
+    errors.push('Please enter a valid email address');
+  }
+  
+  if (leadData.first_name && leadData.first_name.length > 100) {
+    errors.push('First name must be 100 characters or less');
+  }
+  
+  if (leadData.last_name && leadData.last_name.length > 100) {
+    errors.push('Last name must be 100 characters or less');
+  }
+  
+  if (leadData.company_name && leadData.company_name.length > 200) {
+    errors.push('Company name must be 200 characters or less');
+  }
+  
+  if (leadData.job_title && leadData.job_title.length > 150) {
+    errors.push('Job title must be 150 characters or less');
+  }
+  
+  if (leadData.phone && !/^\+?[\d\s\-()]+$/.test(leadData.phone)) {
+    errors.push('Please enter a valid phone number');
+  }
+  
+  if (leadData.linkedin_url && leadData.linkedin_url.length > 500) {
+    errors.push('LinkedIn URL must be 500 characters or less');
+  }
+  
+  if (leadData.score !== undefined && (leadData.score < 0 || leadData.score > 100)) {
+    errors.push('Score must be between 0 and 100');
   }
   
   return errors;

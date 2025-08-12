@@ -1,9 +1,9 @@
 // frontend/src/components/leads/LeadForm.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, User, Mail, Building, Phone, Linkedin, Globe, AlertCircle, Check } from 'lucide-react';
-import { createLead, handleApiError, validateLeadData } from '../../services/api';
+import { createLead, updateLead, handleApiError, validateLeadData } from '../../services/api';
 
-const LeadForm = ({ isOpen, onClose, onSuccess }) => {
+const LeadForm = ({ isOpen, onClose, onSuccess, lead = null, mode = 'create' }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [validationErrors, setValidationErrors] = useState([]);
@@ -22,6 +22,44 @@ const LeadForm = ({ isOpen, onClose, onSuccess }) => {
     notes: ''
   });
 
+  // Initialize form with lead data when in edit mode
+  useEffect(() => {
+    if (mode === 'edit' && lead) {
+      setFormData({
+        email: lead.email || '',
+        first_name: lead.first_name || '',
+        last_name: lead.last_name || '',
+        company_name: lead.company_name || '',
+        job_title: lead.job_title || '',
+        phone: lead.phone || '',
+        linkedin_url: lead.linkedin_url || '',
+        source: lead.source || 'other',
+        source_url: lead.source_url || '',
+        score: lead.score || 0,
+        notes: lead.notes || ''
+      });
+    } else {
+      // Reset form for create mode
+      setFormData({
+        email: '',
+        first_name: '',
+        last_name: '',
+        company_name: '',
+        job_title: '',
+        phone: '',
+        linkedin_url: '',
+        source: 'other',
+        source_url: '',
+        score: 0,
+        notes: ''
+      });
+    }
+    
+    // Clear any existing errors when switching modes
+    setError(null);
+    setValidationErrors([]);
+  }, [mode, lead, isOpen]);
+
   // Lead source options based on backend schema
   const sourceOptions = [
     { value: 'apollo', label: 'Apollo' },
@@ -34,9 +72,15 @@ const LeadForm = ({ isOpen, onClose, onSuccess }) => {
   ];
 
   const handleInputChange = (field, value) => {
+    // Convert score to number to ensure proper handling
+    let processedValue = value;
+    if (field === 'score') {
+      processedValue = value === '' ? 0 : parseInt(value) || 0;
+    }
+    
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [field]: processedValue
     }));
     
     // Clear validation errors when user starts typing
@@ -65,10 +109,9 @@ const LeadForm = ({ isOpen, onClose, onSuccess }) => {
         return;
       }
       
-      // Prepare data for API (remove empty strings and convert score to number)
+      // Prepare data for API (remove empty strings, score is already a number)
       const leadData = {
         ...formData,
-        score: parseInt(formData.score) || 0,
         // Remove empty optional fields
         first_name: formData.first_name.trim() || null,
         last_name: formData.last_name.trim() || null,
@@ -80,29 +123,37 @@ const LeadForm = ({ isOpen, onClose, onSuccess }) => {
         notes: formData.notes.trim() || null
       };
       
-      const createdLead = await createLead(leadData);
+      let result;
+      if (mode === 'edit' && lead) {
+        result = await updateLead(lead.id, leadData);
+      } else {
+        result = await createLead(leadData);
+      }
       
       // Success! Close form and notify parent
-      onSuccess(createdLead);
+      onSuccess(result);
       
-      // Reset form
-      setFormData({
-        email: '',
-        first_name: '',
-        last_name: '',
-        company_name: '',
-        job_title: '',
-        phone: '',
-        linkedin_url: '',
-        source: 'other',
-        source_url: '',
-        score: 0,
-        notes: ''
-      });
+      // Reset form only for create mode
+      if (mode === 'create') {
+        setFormData({
+          email: '',
+          first_name: '',
+          last_name: '',
+          company_name: '',
+          job_title: '',
+          phone: '',
+          linkedin_url: '',
+          source: 'other',
+          source_url: '',
+          score: 0,
+          notes: ''
+        });
+      }
       
     } catch (err) {
       const errorMessage = handleApiError(err);
-      setError(`Failed to create lead: ${errorMessage}`);
+      const action = mode === 'edit' ? 'update' : 'create';
+      setError(`Failed to ${action} lead: ${errorMessage}`);
       console.error('Error creating lead:', err);
     } finally {
       setLoading(false);
@@ -128,7 +179,7 @@ const LeadForm = ({ isOpen, onClose, onSuccess }) => {
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg leading-6 font-medium text-gray-900">
-              Create New Lead
+              {mode === 'edit' ? 'Edit Lead' : 'Create New Lead'}
             </h3>
             <button
               onClick={handleClose}
@@ -390,12 +441,12 @@ const LeadForm = ({ isOpen, onClose, onSuccess }) => {
                 {loading ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Creating...
+                    {mode === 'edit' ? 'Updating...' : 'Creating...'}
                   </>
                 ) : (
                   <>
                     <Check size={16} className="mr-2" />
-                    Create Lead
+                    {mode === 'edit' ? 'Update Lead' : 'Create Lead'}
                   </>
                 )}
               </button>

@@ -4,6 +4,7 @@ import { Search, Filter, Users, RefreshCw, Plus } from 'lucide-react';
 import LeadsTable from './LeadsTable';
 import LeadsFilters from './LeadsFilters';
 import LeadForm from './LeadForm';
+import EmailDraftForm from './EmailDraftForm';
 import { fetchLeads } from '../../services/api';
 
 const LeadsDashboard = () => {
@@ -39,6 +40,10 @@ const LeadsDashboard = () => {
   // UI state
   const [showFilters, setShowFilters] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [editingLead, setEditingLead] = useState(null);
+  const [showEmailForm, setShowEmailForm] = useState(false);
+  const [emailLead, setEmailLead] = useState(null);
 
   // Load leads when component mounts or filters/page changes
   useEffect(() => {
@@ -102,6 +107,41 @@ const LeadsDashboard = () => {
 
   const handleCreateCancel = () => {
     setShowCreateForm(false);
+  };
+
+  const handleEditLead = (lead) => {
+    setEditingLead(lead);
+    setShowEditForm(true);
+  };
+
+  const handleEditSuccess = (updatedLead) => {
+    setShowEditForm(false);
+    setEditingLead(null);
+    // Refresh the leads list to show the updated lead
+    loadLeads();
+  };
+
+  const handleEditCancel = () => {
+    setShowEditForm(false);
+    setEditingLead(null);
+  };
+
+  const handleGenerateEmail = (lead) => {
+    setEmailLead(lead);
+    setShowEmailForm(true);
+  };
+
+  const handleEmailSend = (emailData) => {
+    // In a real app, you would call your email sending API here
+    console.log('Sending email:', emailData, 'to lead:', emailLead);
+    alert(`Email would be sent to ${emailData.to}\nSubject: ${emailData.subject}`);
+    setShowEmailForm(false);
+    setEmailLead(null);
+  };
+
+  const handleEmailCancel = () => {
+    setShowEmailForm(false);
+    setEmailLead(null);
   };
 
   return (
@@ -222,6 +262,8 @@ const LeadsDashboard = () => {
             totalLeads={totalLeads}
             pageSize={pageSize}
             onPageChange={handlePageChange}
+            onEditLead={handleEditLead}
+            onGenerateEmail={handleGenerateEmail}
           />
         </div>
 
@@ -230,6 +272,24 @@ const LeadsDashboard = () => {
           isOpen={showCreateForm}
           onClose={handleCreateCancel}
           onSuccess={handleCreateSuccess}
+          mode="create"
+        />
+
+        {/* Edit Lead Form Modal */}
+        <LeadForm
+          isOpen={showEditForm}
+          onClose={handleEditCancel}
+          onSuccess={handleEditSuccess}
+          lead={editingLead}
+          mode="edit"
+        />
+
+        {/* Email Draft Form Modal */}
+        <EmailDraftForm
+          isOpen={showEmailForm}
+          onClose={handleEmailCancel}
+          lead={emailLead}
+          onSendEmail={handleEmailSend}
         />
       </div>
     </div>

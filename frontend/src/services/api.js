@@ -103,6 +103,13 @@ export const generateEmailForLead = async (leadId) => {
   });
 };
 
+export const generateCustomEmail = async (leadId, prompt) => {
+  return apiRequest(`/leads/${leadId}/generate-email`, {
+    method: 'POST',
+    body: JSON.stringify({ prompt }),
+  });
+};
+
 // Campaign API functions
 export const fetchCampaigns = async (params = {}) => {
   // Build query string from params

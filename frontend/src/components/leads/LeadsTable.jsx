@@ -10,7 +10,9 @@ const LeadsTable = ({
   totalPages, 
   totalLeads, 
   pageSize, 
-  onPageChange 
+  onPageChange,
+  onEditLead,
+  onGenerateEmail
 }) => {
 
   const handleLeadClick = (leadId) => {
@@ -20,10 +22,11 @@ const LeadsTable = ({
     // navigate(`/leads/${leadId}`);
   };
 
-  const handleEditLead = (e, leadId) => {
+  const handleEditLead = (e, lead) => {
     e.stopPropagation(); // Prevent row click
-    console.log('Edit lead:', leadId);
-    // TODO: Open edit modal or navigate to edit page
+    if (onEditLead) {
+      onEditLead(lead);
+    }
   };
 
   const handleDeleteLead = (e, leadId) => {
@@ -34,10 +37,11 @@ const LeadsTable = ({
     }
   };
 
-  const handleGenerateEmail = (e, leadId) => {
+  const handleGenerateEmail = (e, lead) => {
     e.stopPropagation(); // Prevent row click
-    console.log('Generate email for lead:', leadId);
-    // TODO: Call generate email API
+    if (onGenerateEmail) {
+      onGenerateEmail(lead);
+    }
   };
 
   const renderPageNumbers = () => {
@@ -130,9 +134,9 @@ const LeadsTable = ({
                 key={lead.id}
                 lead={lead}
                 onClick={() => handleLeadClick(lead.id)}
-                onEdit={(e) => handleEditLead(e, lead.id)}
+                onEdit={(e) => handleEditLead(e, lead)}
                 onDelete={(e) => handleDeleteLead(e, lead.id)}
-                onGenerateEmail={(e) => handleGenerateEmail(e, lead.id)}
+                onGenerateEmail={(e) => handleGenerateEmail(e, lead)}
               />
             ))}
           </tbody>
